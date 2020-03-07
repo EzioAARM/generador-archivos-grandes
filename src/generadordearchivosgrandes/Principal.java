@@ -36,6 +36,7 @@ public class Principal extends javax.swing.JFrame {
                     break;
             }
         }
+        System.out.println(header.length());
         return header;
     }
     
@@ -48,6 +49,7 @@ public class Principal extends javax.swing.JFrame {
         String fila = "";
         // de 65 a 90
         double filas = bytes / 400;
+        JOptionPane.showMessageDialog(this, String.valueOf(bytes));
         for (int i = 0; i < filas; i++) {
             fila = "";
             for (int j = 0; j < 200; j++) {
@@ -132,6 +134,7 @@ public class Principal extends javax.swing.JFrame {
             double ingresado = Double.parseDouble(txtSize.getText());
             ingresado = ingresado * 1e+9;
             GenerarEnBytes(ingresado);
+            JOptionPane.showMessageDialog(this, "Termino", "Success", HEIGHT);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex, "Error", HEIGHT);
         }
@@ -143,6 +146,7 @@ public class Principal extends javax.swing.JFrame {
             double ingresado = Double.parseDouble(txtSize.getText());
             ingresado = ingresado * 1e+6;
             GenerarEnBytes(ingresado);
+            JOptionPane.showMessageDialog(this, "Termino", "Success", HEIGHT);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex, "Error", HEIGHT);
         }
