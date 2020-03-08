@@ -17,28 +17,11 @@ double startLine = 891;
 double startReading = 0;
 int conteo[100];
 
-/*
-    Se podria crear un array de 90 posiciones y que haya una posicion para el ascii del caracter y que sea int, asi se ahorra la comparacion
-*/
-
 struct args {
     double bytesStart;
     double byteEnd;
     int pos;
 };
-
-void cerrarDescriptor() {
-    bool finished = true;
-    for (int i = 0; i < cantThreads; i++) {
-        //printf("%d\n", terminados[i]);
-        if (!terminados[i]) finished = false;
-    }
-    if (finished) {
-        fclose(archivoGrande);
-        printf("Terminaron todos los threads\n");
-    }
-    return;
-}
 
 void *readingThread(void *input) {
     double bytePos = ((struct args*)input)->bytesStart;
@@ -58,16 +41,25 @@ void *readingThread(void *input) {
         for (int i = 0; i <= lastRead; i++) {
             conteoInterno[(int) ((char) letras[i])]++;
         }
+        //if (lastRead != 400) printf("%i", lastRead);
         //printf("thread %i: %i\n", ((struct args*)input)->pos, i);
     }
     pthread_mutex_lock(&lockVar);
         for (int i = 0; i <= 100; i++) {
             conteo[i] += conteoInterno[i];
         }
+        terminados[threadPos] = true;
+        bool finished = true;
+        for (int i = 0; i < cantThreads; i++) {
+            //printf("%d\n", terminados[i]);
+            if (!terminados[i]) finished = false;
+        }
+        if (finished) {
+            fclose(archivoGrande);
+            printf("Terminaron todos los threads\n");
+        }
     pthread_mutex_unlock(&lockVar);
-    printf("\nEl thread %i termino \n", threadPos);
-    terminados[threadPos] = true;
-    cerrarDescriptor();
+    //printf("\nEl thread %i termino \n", threadPos);
 }
 
 int main() {
@@ -77,6 +69,7 @@ int main() {
     printf("Ingrese la ubicacion de su archivo\n");
     char ubicacion[1000];
     scanf("%s", ubicacion);
+    system("clear");
     archivoGrande = fopen(ubicacion, "r");
     fseek(archivoGrande, 0L, SEEK_END);
     // Obtiene el peso del archivo
@@ -112,14 +105,15 @@ int main() {
     bool terminoThreads = false;
     char cosa[100] = "";
     while (!terminoThreads) {
-        scanf("%s", cosa);
+        system("clear");
         terminoThreads = true;
         for (int i = 0; i < cantThreads; i++) {
             if (!terminados[i]) terminoThreads = false;
         }
         printf("%s\n", terminoThreads ? "Ya termine!" : "Aun no termino :c");
+        if (!terminoThreads) usleep(30e6);
     }
-    for (int i = 0; i <= 100; i++) {
+    for (int i = 65; i <= 90; i++) {
         printf("%c -> %i\n", (char) i, conteo[i]);
     }
     return 0;
