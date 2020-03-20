@@ -13,7 +13,7 @@ int cantThreads = 4;
 pthread_t threads[4];
 bool terminados[4];
 double bytesToRead;
-double startLine = 891;
+double startLine = 892;
 double startReading = 0;
 double conteo[255];
 
@@ -24,6 +24,7 @@ struct args {
 };
 
 void *readingThread(void *input) {
+    /*Obtiene los argumentos del Struct*/
     double bytePos = ((struct args*)input)->bytesStart;
     double bytePosEnd = ((struct args*)input)->byteEnd;
     int threadPos = ((struct args*)input)->pos;
@@ -31,96 +32,133 @@ void *readingThread(void *input) {
     char c;
     double conteoInterno[255];
     int lastRead = 400;
+    /*Recorre el archivo dentro de los limites establecidos*/
     for (double i = bytePos; i <= bytePosEnd; i += 400) {
+        /*Calcula cuantos caracteres tiene que leer por iteración*/
         lastRead = ((i + 400) > bytePosEnd) ? (bytePosEnd - i) : 400;
+        /*Bloquea el archivo para que solo el pueda acceder a el en el instante*/
         pthread_mutex_lock(&lock);
-            if (fseeko(archivoGrande, i, SEEK_SET) != 0) {
-                printf("Hubo un error en el thread %i\n", threadPos);
-            } else 
-                fread(&letras, 1, lastRead, archivoGrande);
+            /*Busca en el archivo, fseeko es para buscar en archivos grandes*/
+            fseeko(archivoGrande, i, SEEK_SET);
+            fread(&letras, 1, lastRead, archivoGrande);
         pthread_mutex_unlock(&lock);
-        // imprime, aqui debe ir la cuenta
+        /*Recorre los caracteres leidos y suma en la posición correspondiente del array*/
         for (int i = 0; i <= lastRead; i++) {
             conteoInterno[(int) ((char) letras[i])]++;
         }
-        //if (lastRead != 400) printf("%i", lastRead);
-        //printf("thread %i: %i\n", ((struct args*)input)->pos, i);
     }
+    /*Asigna al contador global y verifica si todos los threads terminaron*/
     pthread_mutex_lock(&lockVar);
-        for (int i = 0; i <= 255; i++) {
+        /*Suma al contador global*/
+        for (int i = 65; i <= 90; i++) {
             conteo[i] += conteoInterno[i];
         }
+        /*Asigna terminado a una posición correspondiente al thread*/
         terminados[threadPos] = true;
         bool finished = true;
+        /*Verifica si todos los threads terminaron*/
         for (int i = 0; i < cantThreads; i++) {
-            //printf("%d\n", terminados[i]);
             if (!terminados[i]) finished = false;
         }
-        printf("\nEl thread %i termino \n", threadPos);
+        /*Si terminaron cierra el archivo, si no ignora eso*/
         if (finished) {
             fclose(archivoGrande);
-            printf("Terminaron todos los threads\n");
+        }
+        /*Limpia la consola y muestra la cuenta de las letras*/
+        //system("clear");
+        for (int i = 65; i <= 90; i++) {
+            printf("%c -> %lf\n", (char) i, conteo[i]);
         }
     pthread_mutex_unlock(&lockVar);
 }
 
 int main() {
+    /*Asignaciones iniciales*/
     for (int i = 0; i < cantThreads; i++) {
         terminados[i] = false;
     }
+
     terminados[cantThreads] = true;
+    /*Lee la ubicación del archivo y luego limpia la consola*/
     printf("Ingrese la ubicacion de su archivo\n");
     char ubicacion[1000];
     scanf("%s", ubicacion);
     //system("clear");
+    /*Abre el archivo*/
     archivoGrande = fopen(ubicacion, "r");
+    /*Busca la ultima posición del archivo*/
     fseeko(archivoGrande, 0LL, SEEK_END);
-    // Obtiene el peso del archivo
+    /*Obtiene el peso del archivo en bytes*/
     double fileSize = ftello(archivoGrande);
+    /*Muestra el tamaño del archivo*/
     if ((fileSize / 1e+9) < 1) {
         printf("El archivo pesa: %lf mb (%lf bytes)\n", fileSize / 1e+6, fileSize);
     } else {
         printf("El archivo pesa: %lf gb (%lf bytes)\n", fileSize / 1e+9, fileSize);
     }
+    /*Obtiene la cantidad de caracteres antes del primer salto de linea, estos corresponden al encabezado*/
+    char letrasHead[1];
+    for (int j = 0; j < startLine; j++) {
+        fseeko(archivoGrande, j, SEEK_SET);
+        fread(&letrasHead, 1, 1, archivoGrande);
+        int ascii = (int)((char)letrasHead[0]);
+        switch (ascii)
+        {
+            case 10:
+                startLine = j;
+                j = fileSize + 10;
+                break;
+            default: break;
+        }
+    }
+    /*Calcula cuantos bytes leera cada cada thread en base a la variable cantThreads*/
     bytesToRead = fileSize;
-    //printf("bytes: %f\n", bytesToRead);
     int i = 0;
     struct args *myStruc;
     double start = startLine;
     startReading = bytesToRead;
+    /*Para que no hayan decimales ceil aproxima al entero arriba*/
     double bytesThread = ceil(bytesToRead / (cantThreads));
     double end = start + bytesThread;
-    //printf("%lf\n", bytesThread);
+    /*Crea los threads*/
     while (i < cantThreads) {
+        /*Crea el struct con los datos correspondientes a cada thread*/
         myStruc = (struct args *)malloc(sizeof(struct args));
         myStruc->bytesStart = start;
         myStruc->byteEnd = end;
         myStruc->pos = i;
+        /*Crea el thread*/
         pthread_create(&threads[i], NULL, readingThread, myStruc);
-        printf("El thread %i leera %lf bytes hasta %lf\n", i, start, end);
+        /*Pone el nuevo inicio y el nuevo fin para el siguiente thread*/
         start = end + 1;
         end = start + bytesThread;
+        /*Si sobrepasa el tamaño del archivo asigna el tamaño maximo del archivo*/
         if (end >= bytesToRead) {
             end = bytesToRead;
         }
         i++;
     }
+    /*Espera a que los threads terminen*/
     for (int j = 0; j < cantThreads; j++) {
         pthread_join(threads[j], NULL);
     }
-    bool terminoThreads = false;
-    char cosa[100] = "";
-    while (!terminoThreads) {
-        //system("clear");
-        terminoThreads = true;
-        for (int i = 0; i < cantThreads; i++) {
-            if (!terminados[i]) terminoThreads = false;
-        }
-        printf("%s\n", terminoThreads ? "Ya termine!" : "Aun no termino :c");
-        if (!terminoThreads) usleep(30e6);
-    }
+    /*Obtiene la ubicación del proyecto actual*/
+    char cwd[1000];
+    getcwd(cwd, sizeof(cwd));
+    strcat(cwd, "/output.csv");
+    archivoGrande = fopen(cwd, "w");
+    char numStr[32];
+    char cadenaEscribir[100];
+    char letra[1];
     for (int i = 65; i <= 90; i++) {
-        printf("%c -> %lf\n", (char) i, conteo[i]);
+        letra[1] = (char) i;
+        sprintf(numStr, "%f", conteo[i]);
+        strcat(cadenaEscribir, letra);
+        strcat(cadenaEscribir, ",");
+        strcat(cadenaEscribir, numStr);
+        strcat(cadenaEscribir, "\n");
+        fwrite(archivoGrande, sizeof(cadenaEscribir), 1, archivoGrande);
     }
+    fclose(archivoGrande);
     return 0;
 }
