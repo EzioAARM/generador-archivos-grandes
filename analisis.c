@@ -32,7 +32,6 @@ void *readingThread(void *input) {
     char c;
     double conteoInterno[255];
     int lastRead = 400;
-    int modLive = 0;
     int otroCont = 0;
     /*Recorre el archivo dentro de los limites establecidos*/
     for (double i = bytePos; i <= bytePosEnd; i += 400) {
@@ -48,10 +47,9 @@ void *readingThread(void *input) {
         for (int i = 0; i <= lastRead; i++) {
             conteoInterno[(int) ((char) letras[i])]++;
         }
-        modLive = otroCont % 250000;
-        switch (modLive)
+        switch (otroCont)
         {
-        case 0:
+        case 250000:
             system("clear");
             pthread_mutex_lock(&lockVar);
                 /*Suma al contador global*/
@@ -176,5 +174,6 @@ int main() {
         fputc((char) 10, archivoGrande);
     }
     fclose(archivoGrande);
+    printf("Su archivo de salida se genero en: %s", cwd);
     return 0;
 }
