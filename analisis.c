@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
+#include <dos.h> 
 
 FILE *archivoGrande;
 pthread_mutex_t lock;
@@ -112,6 +114,7 @@ int main() {
     } else {
         printf("El archivo pesa: %lf gb (%lf bytes)\n", fileSize / 1e+9, fileSize);
     }
+    struct tm inicialDate = *localtime(&now);
     /*Obtiene la cantidad de caracteres antes del primer salto de linea, estos corresponden al encabezado*/
     char letrasHead[1];
     for (int j = 0; j < startLine; j++) {
@@ -127,6 +130,7 @@ int main() {
             default: break;
         }
     }
+    startLine = startLine - 1;
     /*Calcula cuantos bytes leera cada cada thread en base a la variable cantThreads*/
     bytesToRead = fileSize;
     int i = 0;
@@ -136,6 +140,7 @@ int main() {
     /*Para que no hayan decimales ceil aproxima al entero arriba*/
     double bytesThread = ceil(bytesToRead / (cantThreads));
     double end = start + bytesThread;
+
     /*Crea los threads*/
     while (i < cantThreads) {
         /*Crea el struct con los datos correspondientes a cada thread*/
@@ -174,6 +179,10 @@ int main() {
         fputc((char) 10, archivoGrande);
     }
     fclose(archivoGrande);
+    struct tm finalDate = *localtime(&now);
     printf("Su archivo de salida se genero en: %s", cwd);
+    int minutos = finalDate.tm_min - inicialDate.tm_min;
+    int segundos = finalDate.tm_sec - inicialDate.tm_sec;
+    printf("La ejecucion duro %i minutos y %i segundos", minutos, segundos);
     return 0;
 }
