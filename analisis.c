@@ -183,7 +183,7 @@ int main() {
     char buff2[100];
     time_t now2 = time(0);
     struct tm finalDate = *localtime(&now2);
-    printf("Su archivo de salida se genero en: %s", cwd);
+    printf("Su archivo de salida se genero en: %s\n", cwd);
     int minutos = finalDate.tm_min - inicialDate.tm_min;
     int segundos = finalDate.tm_sec - inicialDate.tm_sec;
     printf("La ejecucion duro %i minutos y %i segundos", minutos, segundos);
