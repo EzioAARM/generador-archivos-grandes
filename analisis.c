@@ -32,6 +32,8 @@ void *readingThread(void *input) {
     char c;
     double conteoInterno[255];
     int lastRead = 400;
+    int modLive = 0;
+    int otroCont = 0;
     /*Recorre el archivo dentro de los limites establecidos*/
     for (double i = bytePos; i <= bytePosEnd; i += 400) {
         /*Calcula cuantos caracteres tiene que leer por iteración*/
@@ -46,6 +48,22 @@ void *readingThread(void *input) {
         for (int i = 0; i <= lastRead; i++) {
             conteoInterno[(int) ((char) letras[i])]++;
         }
+        modLive = otroCont % 250000;
+        switch (modLive)
+        {
+        case 0:
+            system("clear");
+            pthread_mutex_lock(&lockVar);
+                /*Suma al contador global*/
+                for (int i = 65; i <= 90; i++) {
+                    conteo[i] += conteoInterno[i];
+                    printf("%c -> %lf\n", (char) i, conteo[i]);
+                    conteoInterno[i] = 0;
+                }
+            pthread_mutex_unlock(&lockVar);
+            break;
+        }
+        otroCont++;
     }
     /*Asigna al contador global y verifica si todos los threads terminaron*/
     pthread_mutex_lock(&lockVar);
@@ -65,7 +83,7 @@ void *readingThread(void *input) {
             fclose(archivoGrande);
         }
         /*Limpia la consola y muestra la cuenta de las letras*/
-        //system("clear");
+        system("clear");
         for (int i = 65; i <= 90; i++) {
             printf("%c -> %lf\n", (char) i, conteo[i]);
         }
@@ -83,7 +101,7 @@ int main() {
     printf("Ingrese la ubicacion de su archivo\n");
     char ubicacion[1000];
     scanf("%s", ubicacion);
-    //system("clear");
+    system("clear");
     /*Abre el archivo*/
     archivoGrande = fopen(ubicacion, "r");
     /*Busca la ultima posición del archivo*/
@@ -148,16 +166,14 @@ int main() {
     strcat(cwd, "/output.csv");
     archivoGrande = fopen(cwd, "w");
     char numStr[32];
-    char cadenaEscribir[100];
-    char letra[1];
+    char cadenaEscribir[100] = "";
+    char letra;
     for (int i = 65; i <= 90; i++) {
-        letra[1] = (char) i;
-        sprintf(numStr, "%f", conteo[i]);
-        strcat(cadenaEscribir, letra);
-        strcat(cadenaEscribir, ",");
-        strcat(cadenaEscribir, numStr);
-        strcat(cadenaEscribir, "\n");
-        fwrite(archivoGrande, sizeof(cadenaEscribir), 1, archivoGrande);
+        letra = (char) i;
+        fputc(letra, archivoGrande);
+        fputc((char) 44, archivoGrande);
+        fprintf(archivoGrande, "%f", conteo[i]);
+        fputc((char) 10, archivoGrande);
     }
     fclose(archivoGrande);
     return 0;
