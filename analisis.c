@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
-#include <dos.h> 
 
 FILE *archivoGrande;
 pthread_mutex_t lock;
@@ -114,6 +113,8 @@ int main() {
     } else {
         printf("El archivo pesa: %lf gb (%lf bytes)\n", fileSize / 1e+9, fileSize);
     }
+    char buff[100];
+    time_t now = time(0);
     struct tm inicialDate = *localtime(&now);
     /*Obtiene la cantidad de caracteres antes del primer salto de linea, estos corresponden al encabezado*/
     char letrasHead[1];
@@ -179,7 +180,9 @@ int main() {
         fputc((char) 10, archivoGrande);
     }
     fclose(archivoGrande);
-    struct tm finalDate = *localtime(&now);
+    char buff2[100];
+    time_t now2 = time(0);
+    struct tm finalDate = *localtime(&now2);
     printf("Su archivo de salida se genero en: %s", cwd);
     int minutos = finalDate.tm_min - inicialDate.tm_min;
     int segundos = finalDate.tm_sec - inicialDate.tm_sec;
